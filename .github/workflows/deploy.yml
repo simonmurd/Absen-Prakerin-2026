@@ -2,7 +2,7 @@ name: Deploy Vite React App to GitHub Pages
 
 on:
   push:
-    branches: [ main ] # Sesuaikan dengan branch utama Anda (main atau master)
+    branches: [ main ] # Sesuaikan jika branch utama Anda master
 
 permissions:
   contents: read
@@ -23,10 +23,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22 # Menggunakan Node.js 22 terbaru untuk menghindari warning deprecated
+          node-version: 22
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Dependencies (with legacy peer deps)
+        run: npm install --legacy-peer-deps
 
       - name: Build Project with Vite
         run: npm run build
