@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Rekapitulasi Absensi</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #0b0f19;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            --hadir-color: #00ff9d;
+            --ijin-color: #ffcc00;
+            --sakit-color: #ff0055;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.4);
+            --warning-bg: rgba(255, 0, 85, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 255, 157, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px 24px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin-top: 40px;
+        }
+
+        /* Tab Navigasi */
+        .tabs-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            justify-content: space-between;
+        }
+
+        .tab-link {
+            flex: 1;
+            text-decoration: none;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 10px 0;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .tab-link.active-tab {
+            color: var(--text-main);
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 24px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Input Pencarian Spesifik */
+        .search-wrapper {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+        
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Tabel Rekapitulasi */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Indikator Peringatan (< 80%) */
+        .warning-row {
+            background: var(--warning-bg) !important;
+            border-left: 4px solid var(--sakit-color);
+        }
+        
+        .warning-row td {
+            color: #ffb3c6;
+        }
+
+        .warning-text {
+            color: var(--sakit-color);
+            font-weight: 700;
+        }
+
+        .success-text {
+            color: var(--hadir-color);
+            font-weight: 700;
+        }
+
+        /* Badge Status */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .b-hadir { background: rgba(0, 255, 157, 0.1); color: var(--hadir-color); }
+        .b-ijin { background: rgba(255, 204, 0, 0.1); color: var(--ijin-color); }
+        .b-sakit { background: rgba(255, 0, 85, 0.1); color: var(--sakit-color); }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Tab Navigasi -->
+    <div class="tabs-container">
+        <a href="https://simonmurd.github.io/AbsenSi" class="tab-link active-tab">1</a>
+        <a href="Oktober.html" class="tab-link">2</a>
+        <a href="November.html" class="tab-link">3</a>
+        <a href="Desember.html" class="tab-link">4</a>
+        <a href="Januari.html" class="tab-link">5</a>
+        <a href="Februari.html" class="tab-link">6</a>
+    </div>
+
+    <h2>Dashboard Rekapitulasi</h2>
+
+    <!-- Fitur Pencarian Spesifik -->
+    <div class="search-wrapper">
+        <input type="text" id="searchInput" placeholder="🔍 Cari Nama Siswa..." autocomplete="off">
+    </div>
+
+    <!-- Area Tabel -->
+    <div class="table-responsive">
+        <table id="rekapTable">
+            <thead>
+                <tr>
+                    <th>Nama Lengkap</th>
+                    <th>Kelas</th>
+                    <th>Hadir</th>
+                    <th>Ijin</th>
+                    <th>Sakit</th>
+                    <th>% Hadir</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Data akan di-render oleh JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // URL Google Apps Script
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxFIRwEd3XrYx00hZOljYXt9alJracAH_APABCPUeYKhtMJNxkRwrL2oOmmDv92RKiR/exec';
+
+    let dataRekap = []; // Array penampung data dari Google Sheet
+    const tableBody = document.getElementById('tableBody');
+    const searchInput = document.getElementById('searchInput');
+
+    // Fungsi render isi tabel
+    function renderTable(data) {
+        tableBody.innerHTML = ''; 
+
+        if (data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="empty-state">Data siswa tidak ditemukan.</td></tr>`;
+            return;
+        }
+
+        data.forEach(siswa => {
+            const totalAktif = siswa.hadir + siswa.ijin + siswa.sakit;
+            const persentase = totalAktif > 0 ? ((siswa.hadir / totalAktif) * 100).toFixed(1) : 0;
+            const isWarning = persentase < 80;
+            
+            const tr = document.createElement('tr');
+            if (isWarning) tr.classList.add('warning-row'); 
+
+            tr.innerHTML = `
+                <td><strong>${siswa.nama}</strong></td>
+                <td>${siswa.kelas}</td>
+                <td><span class="badge b-hadir">${siswa.hadir}</span></td>
+                <td><span class="badge b-ijin">${siswa.ijin}</span></td>
+                <td><span class="badge b-sakit">${siswa.sakit}</span></td>
+                <td class="${isWarning ? 'warning-text' : 'success-text'}">${persentase}%</td>
+            `;
+            
+            tableBody.appendChild(tr);
+        });
+    }
+
+    // Fungsi mengambil data dari Google Sheet via Apps Script
+    async function ambilDataDariSheet() {
+        tableBody.innerHTML = `<tr><td colspan="6" class="empty-state">Memuat data dari server, mohon tunggu…</td></tr>`;
+        
+        try {
+            const response = await fetch(scriptURL + '?action=getRekap');
+            const dataDariServer = await response.json();
+            
+            dataRekap = dataDariServer;
+            renderTable(dataRekap);
+        } catch (error) {
+            console.error('Error memuat data:', error);
+            tableBody.innerHTML = `<tr><td colspan="6" class="empty-state" style="color: var(--sakit-color);">Gagal memuat data. Periksa koneksi atau URL Apps Script.</td></tr>`;
+        }
+    }
+
+    // Panggil data saat halaman terbuka
+    ambilDataDariSheet();
+
+    // Event Listener untuk Fitur Pencarian
+    searchInput.addEventListener('input', function() {
+        const keyword = this.value.toLowerCase();
+        
+        const filteredData = dataRekap.filter(siswa => 
+            siswa.nama.toLowerCase().includes(keyword)
+        );
+        
+        renderTable(filteredData);
+    });
+</script>
+
+</body>
+</html>

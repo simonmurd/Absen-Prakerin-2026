@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Bulan Februari 2027 - Pro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #0b0f19;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Neon Colors */
+            --hadir-color: #00ff9d;
+            --hadir-glow: rgba(0, 255, 157, 0.3);
+            --ijin-color: #ffcc00;
+            --ijin-glow: rgba(255, 204, 0, 0.3);
+            --sakit-color: #ff0055;
+            --sakit-glow: rgba(255, 0, 85, 0.3);
+            --libur-color: #a855f7; 
+            --libur-glow: rgba(168, 85, 247, 0.3);
+            --sunday-color: #ff4d4d; 
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 255, 157, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 420px;
+            padding: 30px 24px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Tab Navigasi */
+        .tabs-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            justify-content: space-between;
+        }
+
+        .tab-link {
+            flex: 1;
+            text-decoration: none;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 10px 0;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .tab-link.active-tab {
+            color: var(--text-main);
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 24px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-main);
+        }
+
+        /* Input Nama */
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+        
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Status Selector */
+        .status-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .btn-status {
+            flex: 1;
+            padding: 12px 0;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* Active Glow Effects */
+        .btn-status[data-type="hadir"].active {
+            color: var(--hadir-color);
+            border-color: var(--hadir-color);
+            box-shadow: 0 0 15px var(--hadir-glow), inset 0 0 10px var(--hadir-glow);
+            background: rgba(0, 255, 157, 0.05);
+        }
+        .btn-status[data-type="ijin"].active {
+            color: var(--ijin-color);
+            border-color: var(--ijin-color);
+            box-shadow: 0 0 15px var(--ijin-glow), inset 0 0 10px var(--ijin-glow);
+            background: rgba(255, 204, 0, 0.05);
+        }
+        .btn-status[data-type="sakit"].active {
+            color: var(--sakit-color);
+            border-color: var(--sakit-color);
+            box-shadow: 0 0 15px var(--sakit-glow), inset 0 0 10px var(--sakit-glow);
+            background: rgba(255, 0, 85, 0.05);
+        }
+        .btn-status[data-type="libur"].active {
+            color: var(--libur-color);
+            border-color: var(--libur-color);
+            box-shadow: 0 0 15px var(--libur-glow), inset 0 0 10px var(--libur-glow);
+            background: rgba(168, 85, 247, 0.05);
+        }
+
+        /* Calendar Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .day-label {
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        /* Styling khusus label hari Minggu */
+        .day-label.sunday {
+            color: var(--sunday-color);
+        }
+
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 400;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        /* Styling khusus tanggal hari Minggu */
+        .day.sunday {
+            color: var(--sunday-color);
+            border-color: rgba(255, 77, 77, 0.2);
+            background: rgba(255, 77, 77, 0.03);
+        }
+
+        .day:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+        }
+
+        /* Active Calendar Day Glow (Override jika diklik) */
+        .day.hadir { background: var(--hadir-color) !important; color: #000 !important; font-weight: 700; box-shadow: 0 0 12px var(--hadir-glow); border: none !important; }
+        .day.ijin { background: var(--ijin-color) !important; color: #000 !important; font-weight: 700; box-shadow: 0 0 12px var(--ijin-glow); border: none !important; }
+        .day.sakit { background: var(--sakit-color) !important; color: #fff !important; font-weight: 700; box-shadow: 0 0 12px var(--sakit-glow); border: none !important; }
+        .day.libur { background: var(--libur-color) !important; color: #fff !important; font-weight: 700; box-shadow: 0 0 12px var(--libur-glow); border: none !important; }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.5);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        /* Loading Overlay */
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            letter-spacing: 1px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* Custom Toast Notification */
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(0, 255, 157, 0.1);
+            color: var(--hadir-color);
+            border: 1px solid var(--hadir-color);
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px var(--hadir-glow);
+            font-weight: 600;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        #toast.error {
+            background: rgba(255, 0, 85, 0.1);
+            color: var(--sakit-color);
+            border-color: var(--sakit-color);
+            box-shadow: 0 0 15px var(--sakit-glow);
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast">Data berhasil dikirim!</div>
+
+<div class="container">
+    
+    <div class="tabs-container">
+        <a href="https://simonmurd.github.io/AbsenSi" class="tab-link">1</a>
+        <a href="Oktober.html" class="tab-link">2</a>
+        <a href="November.html" class="tab-link">3</a>
+        <a href="Desember.html" class="tab-link">4</a>
+        <a href="Januari.html" class="tab-link">5</a>
+        <a href="Februari.html" class="tab-link active-tab">6</a>
+    </div>
+
+    <h2>Absensi Februari 2027</h2>
+
+    <input type="text" id="namaSiswa" list="listSiswa" placeholder="Ketik atau pilih Nama Siswa..." required autocomplete="off">
+    <datalist id="listSiswa"></datalist>
+
+    <div class="status-container">
+        <button class="btn-status active" data-type="hadir" onclick="pilihStatus('hadir')">HADIR</button>
+        <button class="btn-status" data-type="ijin" onclick="pilihStatus('ijin')">IJIN</button>
+        <button class="btn-status" data-type="sakit" onclick="pilihStatus('sakit')">SAKIT</button>
+        <button class="btn-status" data-type="libur" onclick="pilihStatus('libur')">LIBUR</button>
+    </div>
+
+    <div class="calendar-grid" id="calendar">
+        <div class="day-label sunday">Min</div><div class="day-label">Sen</div><div class="day-label">Sel</div>
+        <div class="day-label">Rab</div><div class="day-label">Kam</div><div class="day-label">Jum</div><div class="day-label">Sab</div>
+    </div>
+
+    <button class="btn-submit" onclick="kirimData()">KIRIM DATA</button>
+    <div id="loading">MENGIRIM DATA...</div>
+</div>
+
+<script>
+    function tampilkanToast(pesan, tipe = 'sukses') {
+        const toast = document.getElementById('toast');
+        toast.textContent = pesan;
+        
+        if (tipe === 'error') {
+            toast.classList.add('error');
+        } else {
+            toast.classList.remove('error');
+        }
+
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    let masterDataSiswa = [];
+    const csvDataSiswa = `Sekolah,Kelas,Nama Lengkap
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,01 ANANDIKHA FITHRA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,02 AGNES MARGARETTA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,03 ADE REZKIANSYAH
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,04 CRISTY VALEN
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,05 DENNY GILLBERT
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,06 DION SAPUTRA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,07 ESTER APRIANI
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,08 FAHRI IMANNUDDIN
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,09 GABRIEL OHARA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,10 HINSA SILALAHI
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,11 IRAISYA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,12 ISNAL RIZOLA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,13 JONNY ALEXIUS
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,14 JULIARDI
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,15 LAUDYA SALSABILA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,16 LESKA ELSI VINRIANI
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,17 MARGARETHA EASTER WINA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,18 MISS SYAFIRA CLEOPATRA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,19 MUHAMMAD AKBAR JULRIZOI
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,20 MULAWARMAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,21 NICHOLAS WIRRY FREDICO
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,23 REHAN MULYARDO
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,24 RINGGA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,26 SARAH ANISA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,28 VIOLA ANGGELIA PUTRI
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,29 WIDYA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,30 YENITA
+SMK NEGERI 1 SINGKAWANG,XII TJK 3,31 ZHACKY NURAHMAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,01 ADE FIMANSYAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,02 AYMAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,03 AURA SAPHIRA
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,05 DAVID
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,06 DIKA
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,07 DIVA SEPTIARA
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,08 ESHA WAHYU JUWANDI
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,09 FEBRIOLA LIE FHONG
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,10 GRESTIA ELDA
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,11 GREYALDI JUSTIN JACKSON
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,12 INDRY VINARTI
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,13 JOHN YURA
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,14 KEYSHA LARISSA
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,15 LUCKY VALENTINO
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,16 MARVIN ALFANDA
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,17 MEILY MAHA PUTRI
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,18 MISNADIH
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,19 MUHAMMAD RAFI RAMADHAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,20 NURHALIMAH
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,21 PURIM AILFANI
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,22 QIRAN ATHA YASSAR
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,24 RAHAEL NOVARIANDY
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,26 RINDRA FACHRI SAPUTRA
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,27 TUTI SULISTIAWATI
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,28 URAY AFISYA PUTRI
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,29 VIECK DEP
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,30 YUANDITHA KARIN
+SMK NEGERI 1 SINGKAWANG,XII TJK 2,31 ZADILA AL QINDI
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,01 AURA PUTRI
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,02 ARINI
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,03 ARDIANUS RANDA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,05 CELVIN
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,06 DANIA TRIAPSARI
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,07 DERY IAN SANDY SYAHPUTRA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,08 ELPIDIUS BRILLYANE
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,09 FIANELLA DENATTA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,10 FRANSISKUS GUNDU SETIAWAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,11 GEOVANO JEHARUT
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,12 GRAFATEIS SIAHAYA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,13 IMMANUEL BONY PRATAΜΑ
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,14 JESICA PRANATA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,15 KESYA VANESYA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,16 LESTARI
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,17 MARSYA ANASTASYA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,18 MEYSA PRATAMA HASIBUAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,19 MICHELLE LOUIS
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,20 MUHAMMAD RAFEL APRILIAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,21 OHALIP
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,22 PHAISAL NURZAKI
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,23 RAHMAN ALAMEYAH
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,24 RANDA SAPUTRA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,26 ROHIM KURNIAWAN
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,27 SEFTIANUS MARFIN
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,28 TATA MAHA DEWI
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,29 URAY CHINTYA SELVA
+SMK NEGERI 1 SINGKAWANG,XII TJK 1,30 VIA HANDAYANI`;
+
+    function inisialisasiDataSiswa() {
+        const baris = csvDataSiswa.trim().split('\n');
+        const datalist = document.getElementById('listSiswa');
+        
+        for (let i = 1; i < baris.length; i++) {
+            const kolom = baris[i].split(',');
+            if (kolom.length >= 3) {
+                const sekolah = kolom[0].trim();
+                const kelas = kolom[1].trim();
+                const nama = kolom[2].trim();
+                
+                masterDataSiswa.push({ sekolah, kelas, nama });
+                
+                const option = document.createElement('option');
+                option.value = nama; 
+                option.textContent = `${kelas} - ${sekolah}`;
+                datalist.appendChild(option);
+            }
+        }
+    }
+    
+    inisialisasiDataSiswa();
+
+    let statusAktif = 'hadir'; 
+    let dataAbsen = {}; 
+
+    function pilihStatus(status) {
+        statusAktif = status;
+        document.querySelectorAll('.btn-status').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`.btn-status[data-type="${status}"]`).classList.add('active');
+    }
+
+    const calendarEl = document.getElementById('calendar');
+    
+    // Februari 2027 dimulai pada hari Senin (indeks 1, karena Minggu adalah 0)
+    const hariMulai = 1; 
+    
+    for(let i = 0; i < hariMulai; i++) {
+        const emptyDiv = document.createElement('div');
+        calendarEl.appendChild(emptyDiv);
+    }
+
+    // Februari 2027 memiliki 28 hari
+    for (let i = 1; i <= 28; i++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.classList.add('day');
+        dayDiv.textContent = i;
+        
+        // Cek jika urutan hari jatuh pada kolom Minggu (indeks 0)
+        if ((hariMulai + i - 1) % 7 === 0) {
+            dayDiv.classList.add('sunday');
+        }
+        
+        dayDiv.onclick = function() {
+            dayDiv.classList.remove('hadir', 'ijin', 'sakit', 'libur');
+            
+            if (dataAbsen[i] === statusAktif) {
+                delete dataAbsen[i];
+            } else {
+                dayDiv.classList.add(statusAktif);
+                dataAbsen[i] = statusAktif;
+            }
+        };
+        calendarEl.appendChild(dayDiv);
+    }
+
+    function kirimData() {
+        const nama = document.getElementById('namaSiswa').value;
+        
+        if(!nama) {
+            tampilkanToast("Harap pilih nama terlebih dahulu!", "error");
+            return;
+        }
+        
+        if(Object.keys(dataAbsen).length === 0) {
+            tampilkanToast("Harap pilih minimal 1 tanggal absen!", "error");
+            return;
+        }
+
+        document.getElementById('loading').style.display = 'block';
+
+        const payload = {
+            nama: nama,
+            bulan: "Februari",
+            absen: dataAbsen
+        };
+
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyhgB0SSJjnfxh3UMM5Me6NmX9RveRZTP6g_261JM_GKM_htyxANqnNl7a3UR51zMXX2A/exec';
+
+        fetch(scriptURL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+            tampilkanToast("Data berhasil dikirim!"); 
+            
+            dataAbsen = {};
+            document.querySelectorAll('.day').forEach(d => d.classList.remove('hadir', 'ijin', 'sakit', 'libur'));
+            document.getElementById('namaSiswa').value = '';
+        })
+        .catch(error => {
+            document.getElementById('loading').style.display = 'none';
+            tampilkanToast("Gagal mengirim data!", "error"); 
+            console.error('Error!', error.message);
+        });
+    }
+</script>
+
+</body>
+</html>

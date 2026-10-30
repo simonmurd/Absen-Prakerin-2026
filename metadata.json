@@ -1,0 +1,6 @@
+{
+  "name": "AbsenSi Pro - Sistem Absensi & Dashboard Rekapitulasi Presensi",
+  "description": "Sistem absensi digital modern dan dashboard rekapitulasi kehadiran siswa SMK Negeri 1 Singkawang dengan analitik presensi, kalender interaktif neon, peringatan kehadiran rendah, dan ekspor data.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
