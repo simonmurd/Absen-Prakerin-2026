@@ -5,8 +5,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
-    // Gunakan nama repository Anda sebagai base path jika di-deploy ke GitHub Pages standar
-    base: '/Absen-Prakerin-2026/',
+    // Sesuaikan teks di bawah ini dengan nama repository GitHub Anda yang sebenarnya
+    base: '/Absen-Prakerin-2026/', 
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
