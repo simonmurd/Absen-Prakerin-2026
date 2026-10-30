@@ -2,15 +2,13 @@ name: Deploy Vite React App to GitHub Pages
 
 on:
   push:
-    branches: [ main ] # Sesuaikan jika nama branch utama Anda 'master'
+    branches: [ main ] # Sesuaikan dengan branch utama Anda (main atau master)
 
-# Memberikan izin token GitHub untuk mendeploy ke GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Mencegah deployment yang tumpang tindih
 concurrency:
   group: 'pages'
   cancel-in-progress: true
@@ -25,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22 # Menggunakan Node.js 22 terbaru untuk menghindari warning deprecated
 
       - name: Install Dependencies
         run: npm install
