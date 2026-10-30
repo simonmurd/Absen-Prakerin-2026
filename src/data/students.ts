@@ -118,46 +118,15 @@ export const CLASSES = ['XII TJK 1', 'XII TJK 2', 'XII TJK 3'];
 
 export const DEFAULT_SCRIPT_POST_URL = 'https://script.google.com/macros/s/AKfycbyhgB0SSJjnfxh3UMM5Me6NmX9RveRZTP6g_261JM_GKM_htyxANqnNl7a3UR51zMXX2A/exec';
 export const DEFAULT_SCRIPT_GET_REKAP_URL = 'https://script.google.com/macros/s/AKfycbxFIRwEd3XrYx00hZOljYXt9alJracAH_APABCPUeYKhtMJNxkRwrL2oOmmDv92RKiR/exec?action=getRekap';
+export const USER_PROVIDED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhgB0SSJjnfxh3UMM5Me6NmX9RveRZTP6g_261JM_GKM_htyxANqnNl7a3UR51zMXX2A/exec';
 
-// Generates realistic initial attendance seed so all dashboard metrics & warning indicators (<80%) are functional immediately
-export function generateSeedAttendance(students: Student[]): AttendanceDatabase {
-  const db: AttendanceDatabase = {};
-
-  MONTHS_DATA.forEach(month => {
-    students.forEach((student, idx) => {
-      const key = `${student.id}_${month.key}`;
-      const record: Record<number, AttendanceStatus> = {};
-      
-      // Determine student profile pattern based on index for variety
-      const isLowAttendance = idx % 9 === 0; // some students have <80% attendance (warning)
-      const hasSickLeave = idx % 5 === 0;
-      const hasPermission = idx % 4 === 0;
-
-      for (let day = 1; day <= month.jumlahHari; day++) {
-        const dayOfWeek = (month.hariMulai + day - 1) % 7;
-        if (dayOfWeek === 0) {
-          // Sunday is libur
-          record[day] = 'libur';
-          continue;
-        }
-
-        if (isLowAttendance) {
-          if (day % 7 === 1) record[day] = 'sakit';
-          else if (day % 7 === 2) record[day] = 'ijin';
-          else if (day % 4 === 0) record[day] = 'sakit';
-          else record[day] = 'hadir';
-        } else if (hasSickLeave && (day === 8 || day === 9)) {
-          record[day] = 'sakit';
-        } else if (hasPermission && (day === 15)) {
-          record[day] = 'ijin';
-        } else {
-          record[day] = 'hadir';
-        }
-      }
-
-      db[key] = record;
-    });
-  });
-
-  return db;
+// Clean initial attendance database without any synthetic dummy entries
+export function createEmptyAttendanceDatabase(): AttendanceDatabase {
+  return {};
 }
+
+// Deprecated alias for backwards compatibility, returns clean database
+export function generateSeedAttendance(_students: Student[]): AttendanceDatabase {
+  return {};
+}
+

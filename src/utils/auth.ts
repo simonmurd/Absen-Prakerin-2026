@@ -1,9 +1,9 @@
 export type UserRole = 'public' | 'admin';
 
-export const DEFAULT_ADMIN_PIN = '1234';
+export const DEFAULT_ADMIN_PIN = '17881520';
 
 /**
- * Validates entered PIN against the stored PIN (default '1234')
+ * Validates entered PIN against the stored PIN (default '17881520')
  */
 export function verifyAdminPin(enteredPin: string, storedPin: string = DEFAULT_ADMIN_PIN): boolean {
   return enteredPin.trim() === storedPin.trim();

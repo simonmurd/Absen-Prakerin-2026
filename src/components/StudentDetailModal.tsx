@@ -45,21 +45,21 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const waUrl = `https://wa.me/?text=${generateWhatsAppMessage(student, monthSummary, activePeriodLabel)}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-2xl bg-[#0e1424] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
         {/* Modal Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <div className="p-2.5 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200">
               <GraduationCap className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">{student.nama}</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-lg font-bold text-slate-900">{student.nama}</h3>
+              <p className="text-xs text-slate-500 font-medium">
                 {student.kelas} • {student.sekolah}
               </p>
             </div>
@@ -68,7 +68,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Tutup Dialog"
-            className="p-2 rounded-xl text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -78,55 +78,55 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         <div className="p-6 overflow-y-auto space-y-6">
           
           {/* Overall Attendance Stat Banner */}
-          <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between gap-4">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
             <div>
-              <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+              <span className="text-[11px] uppercase tracking-wider font-bold text-slate-500">
                 Akumulasi Presensi (Okt 2026 - Feb 2027)
               </span>
-              <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-300">
-                <span>Hadir: <strong className="text-[#00ff9d]">{overallSummary.hadir}</strong></span>
+              <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-700">
+                <span>Hadir: <strong className="text-emerald-700 font-bold">{overallSummary.hadir}</strong></span>
                 <span>•</span>
-                <span>Ijin: <strong className="text-[#ffcc00]">{overallSummary.ijin}</strong></span>
+                <span>Ijin: <strong className="text-amber-700 font-bold">{overallSummary.ijin}</strong></span>
                 <span>•</span>
-                <span>Sakit: <strong className="text-[#ff0055]">{overallSummary.sakit}</strong></span>
+                <span>Sakit: <strong className="text-rose-700 font-bold">{overallSummary.sakit}</strong></span>
               </div>
             </div>
 
             <div className="text-right">
-              <span className={`text-2xl font-extrabold ${overallSummary.isWarning ? 'text-[#ff0055]' : 'text-[#00ff9d]'}`}>
+              <span className={`text-2xl font-extrabold ${overallSummary.isWarning ? 'text-rose-600' : 'text-emerald-600'}`}>
                 {overallSummary.persentase}%
               </span>
-              <div className="text-[10px] text-slate-500">rata-rata hadir</div>
+              <div className="text-[10px] text-slate-500 font-medium">persentase kehadiran</div>
             </div>
           </div>
 
           {/* Month Selector Tabs inside modal */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Calendar className="h-4 w-4 text-blue-400" /> Riwayat Kalender Per Bulan
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Calendar className="h-4 w-4 text-blue-600" /> Riwayat Kalender Per Bulan
               </span>
               <button
                 onClick={() => {
                   onNavigateToCalendar(student.id, currentMonth.key);
                   onClose();
                 }}
-                className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <span>Buka di Editor Absensi</span>
                 <ExternalLink className="h-3 w-3" />
               </button>
             </div>
 
-            <div className="grid grid-cols-5 gap-1 p-1 bg-black/40 rounded-xl border border-white/5">
+            <div className="grid grid-cols-5 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
               {months.map(m => (
                 <button
                   key={m.key}
                   onClick={() => setActiveMonthKey(m.key)}
                   className={`py-1.5 px-2 text-center rounded-lg text-xs font-bold transition-all ${
                     m.key === activeMonthKey
-                      ? 'bg-blue-600/30 text-white border border-blue-500/50 shadow-sm'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-blue-600 shadow-sm border border-slate-200'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {m.nama}
@@ -136,9 +136,9 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           </div>
 
           {/* Mini Calendar Visualization */}
-          <div className="p-4 rounded-2xl bg-black/30 border border-white/5">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              <span className="text-[#ff4d4d]">Min</span>
+          <div className="p-4 rounded-2xl bg-white border border-slate-200">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+              <span className="text-rose-600">Min</span>
               <span>Sen</span>
               <span>Sel</span>
               <span>Rab</span>
@@ -159,12 +159,12 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 const status = monthRecord[day];
                 const isSunday = (currentMonth.hariMulai + day - 1) % 7 === 0;
 
-                let cls = 'bg-white/[0.02] text-slate-400 border border-white/5';
-                if (status === 'hadir') cls = 'bg-[#00ff9d] text-black font-bold shadow-sm';
-                else if (status === 'ijin') cls = 'bg-[#ffcc00] text-black font-bold shadow-sm';
-                else if (status === 'sakit') cls = 'bg-[#ff0055] text-white font-bold shadow-sm';
-                else if (status === 'libur') cls = 'bg-[#a855f7] text-white font-bold shadow-sm';
-                else if (isSunday) cls = 'text-[#ff4d4d] bg-red-500/[0.04] border-red-500/20';
+                let cls = 'bg-slate-50 text-slate-700 border border-slate-200';
+                if (status === 'hadir') cls = 'bg-emerald-600 text-white font-bold shadow-sm';
+                else if (status === 'ijin') cls = 'bg-amber-500 text-white font-bold shadow-sm';
+                else if (status === 'sakit') cls = 'bg-rose-600 text-white font-bold shadow-sm';
+                else if (status === 'libur') cls = 'bg-violet-600 text-white font-bold shadow-sm';
+                else if (isSunday) cls = 'text-rose-600 bg-rose-50 border-rose-200 font-bold';
 
                 return (
                   <div 
@@ -179,15 +179,15 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             </div>
 
             {/* Month Stats bar */}
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 text-xs">
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs font-medium">
               <div className="flex items-center gap-3">
-                <span className="text-[#00ff9d] font-bold">H: {monthSummary.hadir}</span>
-                <span className="text-[#ffcc00] font-bold">I: {monthSummary.ijin}</span>
-                <span className="text-[#ff0055] font-bold">S: {monthSummary.sakit}</span>
-                <span className="text-[#a855f7] font-bold">L: {monthSummary.libur}</span>
+                <span className="text-emerald-700 font-bold">H: {monthSummary.hadir}</span>
+                <span className="text-amber-700 font-bold">I: {monthSummary.ijin}</span>
+                <span className="text-rose-700 font-bold">S: {monthSummary.sakit}</span>
+                <span className="text-violet-700 font-bold">L: {monthSummary.libur}</span>
               </div>
               <div className="font-extrabold text-sm text-right">
-                <span className={monthSummary.isWarning ? 'text-[#ff0055]' : 'text-[#00ff9d]'}>
+                <span className={monthSummary.isWarning ? 'text-rose-600' : 'text-emerald-600'}>
                   {monthSummary.persentase}% Hadir
                 </span>
               </div>
@@ -197,20 +197,20 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-white/10 flex items-center justify-between bg-white/[0.02] gap-3">
+        <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 gap-3">
           <a
             href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-[#00ff9d] border border-emerald-500/30 text-xs font-bold flex items-center gap-2 transition-all"
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
           >
             <MessageCircle className="h-4 w-4" />
-            <span>Kirim Pesan WhatsApp ke Wali Murid</span>
+            <span>Kirim WhatsApp ke Wali Murid</span>
           </a>
 
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white text-xs font-bold transition-colors"
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
           >
             Tutup
           </button>

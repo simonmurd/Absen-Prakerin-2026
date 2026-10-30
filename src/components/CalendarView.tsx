@@ -12,7 +12,7 @@ import {
   ShieldAlert,
   Info
 } from 'lucide-react';
-import { Student, MonthInfo, AttendanceStatus, AttendanceDatabase, StudentMonthAttendance } from '../types/attendance';
+import { Student, MonthInfo, AttendanceStatus, AttendanceDatabase, StudentMonthAttendance, GasStudentRekap } from '../types/attendance';
 import { calculateStudentSummary } from '../utils/attendance';
 import { UserRole } from '../utils/auth';
 
@@ -27,6 +27,7 @@ interface CalendarViewProps {
   onSelectMonthKey: (key: string) => void;
   scriptPostUrl: string;
   userRole?: UserRole;
+  gasData?: GasStudentRekap[] | null;
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
@@ -40,6 +41,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onSelectMonthKey,
   scriptPostUrl,
   userRole = 'public',
+  gasData,
 }) => {
   // Current active status tool
   const [activeStatus, setActiveStatus] = useState<AttendanceStatus>('hadir');
@@ -67,6 +69,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const currentStudent = useMemo(() => {
     return students.find(s => s.id === selectedStudentId);
   }, [students, selectedStudentId]);
+
+  // Lookup real student attendance from Google Sheet
+  const studentGasRecord = useMemo(() => {
+    if (!currentStudent || !gasData) return null;
+    const clean = currentStudent.nama.trim().toLowerCase();
+    return gasData.find(g => g.nama.trim().toLowerCase() === clean) || null;
+  }, [currentStudent, gasData]);
+
+  // Autofill student's actual presence count from Google Sheet
+  const handleFillFromGasRecord = () => {
+    if (!studentGasRecord) return;
+    const count = studentGasRecord.hadir;
+    const next: StudentMonthAttendance = {};
+    let filled = 0;
+    for (let day = 1; day <= currentMonth.jumlahHari; day++) {
+      const isSunday = (currentMonth.hariMulai + day - 1) % 7 === 0;
+      if (isSunday) {
+        next[day] = 'libur';
+      } else if (filled < count) {
+        next[day] = 'hadir';
+        filled++;
+      }
+    }
+    setLocalAttendance(next);
+    showToast(`Diterapkan ${filled} hari Hadir sesuai catatan Google Sheet.`);
+  };
 
   // Filter students for suggestions
   const suggestedStudents = useMemo(() => {
@@ -116,56 +144,50 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     });
   };
 
-  // Bulk actions
+  // Quick auto-fill weekdays as hadir
   const handleAutoFillWeekdays = () => {
     if (!selectedStudentId) {
       showToast('Pilih nama siswa terlebih dahulu!', 'error');
       return;
     }
-
-    setLocalAttendance(prev => {
-      const next = { ...prev };
-      for (let day = 1; day <= currentMonth.jumlahHari; day++) {
-        const dayOfWeek = (currentMonth.hariMulai + day - 1) % 7;
-        if (dayOfWeek === 0) {
-          next[day] = 'libur'; // Sunday
-        } else {
-          next[day] = 'hadir'; // Mon-Sat
-        }
+    const next: StudentMonthAttendance = {};
+    for (let day = 1; day <= currentMonth.jumlahHari; day++) {
+      const isSunday = (currentMonth.hariMulai + day - 1) % 7 === 0;
+      if (isSunday) {
+        next[day] = 'libur';
+      } else {
+        next[day] = 'hadir';
       }
-      return next;
-    });
-    showToast('Seluruh hari kerja berhasil ditandai Hadir!');
+    }
+    setLocalAttendance(next);
+    showToast('Seluruh hari kerja (Senin-Sabtu) telah ditandai Hadir.');
   };
 
+  // Quick mark Sundays as holiday
   const handleMarkSundaysHoliday = () => {
-    if (!selectedStudentId) {
-      showToast('Pilih nama siswa terlebih dahulu!', 'error');
-      return;
-    }
-
     setLocalAttendance(prev => {
       const next = { ...prev };
       for (let day = 1; day <= currentMonth.jumlahHari; day++) {
-        const dayOfWeek = (currentMonth.hariMulai + day - 1) % 7;
-        if (dayOfWeek === 0) {
+        const isSunday = (currentMonth.hariMulai + day - 1) % 7 === 0;
+        if (isSunday) {
           next[day] = 'libur';
         }
       }
       return next;
     });
-    showToast('Hari Minggu berhasil ditandai Libur!');
+    showToast('Hari Minggu berhasil ditandai Libur.');
   };
 
+  // Clear current calendar
   const handleClearCalendar = () => {
     setLocalAttendance({});
-    showToast('Catatan absen bulan ini telah dibersihkan.');
+    showToast('Kalender berhasil dikosongkan.');
   };
 
-  // Submit attendance handler
-  const handleSubmitData = async () => {
+  // Submit attendance to Google Apps Script and local DB
+  const handleSubmit = async () => {
     if (!currentStudent) {
-      showToast('Harap pilih nama siswa terlebih dahulu!', 'error');
+      showToast('Pilih nama siswa terlebih dahulu!', 'error');
       return;
     }
 
@@ -177,43 +199,36 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Send payload to Google Apps Script
+      // 1. Save to local database state
+      await onUpdateAttendance(currentStudent.id, currentMonth.key, localAttendance);
+
+      // 2. Prepare payload matching original HTML
       const payload = {
         nama: currentStudent.nama,
         bulan: currentMonth.nama,
         absen: localAttendance,
       };
 
-      // Call Google Apps Script endpoint in background (or fallback if offline)
-      try {
+      // 3. Post to Google Apps Script
+      if (scriptPostUrl) {
         await fetch(scriptPostUrl, {
           method: 'POST',
-          mode: 'no-cors', // standard Apps Script POST mode to bypass CORS
+          mode: 'no-cors', // standard Apps Script cross-origin submission
           body: JSON.stringify(payload),
           headers: {
             'Content-Type': 'text/plain;charset=utf-8',
           },
         });
-      } catch (err) {
-        console.warn('Network call to Google Apps Script skipped or offline:', err);
       }
 
-      // Persist locally in state + localStorage
-      await onUpdateAttendance(currentStudent.id, currentMonth.key, localAttendance);
-
-      showToast(`Data presensi ${currentStudent.nama} berhasil dikirim!`, 'success');
-    } catch (error) {
-      console.error('Error submitting attendance:', error);
-      showToast('Terjadi kesalahan saat menyimpan data!', 'error');
+      showToast(`Data presensi ${currentStudent.nama} berhasil dikirim!`);
+    } catch (err: any) {
+      console.warn('Network issue posting to Apps Script, saved locally:', err);
+      showToast('Data tersimpan secara lokal (Periksa koneksi internet)', 'success');
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // Calculate live summary for this month
-  const liveSummary = useMemo(() => {
-    return calculateStudentSummary(localAttendance);
-  }, [localAttendance]);
 
   // Month navigation
   const currentMonthIndex = months.findIndex(m => m.key === currentMonth.key);
@@ -228,42 +243,43 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     }
   };
 
+  // Calculate live stats for the current view
+  const liveSummary = useMemo(() => {
+    return calculateStudentSummary(localAttendance);
+  }, [localAttendance]);
+
   return (
-    <div className="relative max-w-2xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       
-      {/* Toast Notification (replicates original custom toast with animated bounce) */}
+      {/* Toast Notification */}
       <div 
-        className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-out flex items-center gap-2.5 px-5 py-3 rounded-2xl font-bold text-sm shadow-2xl backdrop-blur-xl ${
-          toast.show ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-16 opacity-0 scale-90 pointer-events-none'
+        className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 font-bold text-xs sm:text-sm transition-all duration-300 ${
+          toast.show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'
         } ${
           toast.type === 'error' 
-            ? 'bg-pink-950/90 text-[#ff0055] border border-[#ff0055] glow-sakit' 
-            : 'bg-emerald-950/90 text-[#00ff9d] border border-[#00ff9d] glow-hadir'
+            ? 'bg-rose-600 text-white shadow-rose-600/20' 
+            : 'bg-emerald-600 text-white shadow-emerald-600/20'
         }`}
       >
         {toast.type === 'error' ? <ShieldAlert className="h-5 w-5" /> : <CheckCheck className="h-5 w-5" />}
         <span>{toast.message}</span>
       </div>
 
-      {/* Main Glass Container (matches original dimensions & aesthetics) */}
-      <div className="p-6 sm:p-8 rounded-3xl glass-panel shadow-2xl relative overflow-hidden">
-        
-        {/* Ambient background glow */}
-        <div className="absolute top-0 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      {/* Main Container - Minimalist Bright White */}
+      <div className="p-5 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-hidden">
 
-        {/* Tab Navigasi Bulan (1-6 matching original tabs) */}
+        {/* Tab Navigasi Bulan */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs uppercase font-bold tracking-wider text-slate-400 flex items-center gap-1.5">
-              <CalendarIcon className="h-3.5 w-3.5 text-blue-400" /> Pilih Periode Bulan
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-500 flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5 text-blue-600" /> Pilih Periode Bulan
             </span>
             <div className="flex items-center gap-1">
               <button 
                 onClick={handlePrevMonth}
                 disabled={currentMonthIndex === 0}
                 aria-label="Bulan sebelumnya"
-                className="p-1 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-slate-400"
+                className="p-1 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-500 cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -271,24 +287,24 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 onClick={handleNextMonth}
                 disabled={currentMonthIndex === months.length - 1}
                 aria-label="Bulan berikutnya"
-                className="p-1 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-slate-400"
+                className="p-1 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-500 cursor-pointer"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-1.5 p-1 rounded-2xl bg-black/40 border border-white/5">
+          <div className="grid grid-cols-5 gap-1.5 p-1 rounded-2xl bg-slate-100 border border-slate-200">
             {months.map((m) => {
               const isActive = m.key === currentMonth.key;
               return (
                 <button
                   key={m.key}
                   onClick={() => onSelectMonthKey(m.key)}
-                  className={`py-2 px-1 text-center rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 ${
+                  className={`py-2 px-1 text-center rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-blue-600/30 text-white border border-blue-500/60 shadow-[0_0_12px_rgba(59,130,246,0.4)]'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                      ? 'bg-white text-blue-600 shadow-sm border border-slate-200'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                   }`}
                 >
                   <span className="block truncate">{m.nama}</span>
@@ -301,32 +317,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
         {/* Header Title */}
         <div className="text-center mb-6">
-          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-wider uppercase">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight uppercase">
             Absensi {currentMonth.nama} {currentMonth.tahun}
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Klik tanggal untuk menandai atau mengubah status kehadiran siswa
           </p>
         </div>
 
         {/* Student Selection with Class filter */}
-        <div className="space-y-2 mb-6">
+        <div className="space-y-2.5 mb-6">
           <div className="flex items-center justify-between">
-            <label htmlFor="studentInput" className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5 text-blue-400" />
+            <label htmlFor="studentInput" className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5 text-blue-600" />
               Nama Siswa
             </label>
             <div className="flex items-center gap-1 text-xs">
-              <span className="text-slate-500 text-[11px]">Filter Rombel:</span>
+              <span className="text-slate-400 text-[11px]">Filter Rombel:</span>
               <select
                 value={filterClass}
                 onChange={(e) => setFilterClass(e.target.value)}
-                className="bg-transparent text-blue-400 font-semibold focus:outline-none cursor-pointer"
+                className="bg-transparent text-blue-600 font-bold focus:outline-none cursor-pointer"
               >
-                <option value="all" className="bg-[#0b0f19] text-white">Semua Kelas</option>
-                <option value="XII TJK 1" className="bg-[#0b0f19] text-white">XII TJK 1</option>
-                <option value="XII TJK 2" className="bg-[#0b0f19] text-white">XII TJK 2</option>
-                <option value="XII TJK 3" className="bg-[#0b0f19] text-white">XII TJK 3</option>
+                <option value="all">Semua Kelas</option>
+                <option value="XII TJK 1">XII TJK 1</option>
+                <option value="XII TJK 2">XII TJK 2</option>
+                <option value="XII TJK 3">XII TJK 3</option>
               </select>
             </div>
           </div>
@@ -346,7 +362,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 }
               }}
               placeholder="Ketik atau pilih Nama Siswa..."
-              className="w-full px-4 py-3.5 rounded-2xl glass-input text-sm font-medium"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
               autoComplete="off"
             />
             <datalist id="listSiswaDatalist">
@@ -359,22 +375,52 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </div>
 
           {currentStudent && (
-            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 text-xs text-slate-400">
-              <span>Kelas: <strong className="text-slate-200">{currentStudent.kelas}</strong></span>
-              <span>{currentStudent.sekolah}</span>
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between text-xs text-slate-700">
+                <span>Kelas: <strong className="text-slate-900 font-bold">{currentStudent.kelas}</strong></span>
+                <span className="text-slate-500 font-medium">{currentStudent.sekolah}</span>
+              </div>
+
+              {studentGasRecord ? (
+                <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-slate-500 font-medium">Rekap Spreadsheet:</span>
+                    <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">
+                      {studentGasRecord.hadir} Hadir
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[11px]">
+                      {studentGasRecord.ijin} Ijin
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[11px]">
+                      {studentGasRecord.sakit} Sakit
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-600">
+                    Tingkat Kehadiran: <strong className={studentGasRecord.hadir + studentGasRecord.ijin + studentGasRecord.sakit > 0 && (studentGasRecord.hadir / (studentGasRecord.hadir + studentGasRecord.ijin + studentGasRecord.sakit)) < 0.8 ? 'text-rose-600' : 'text-emerald-600'}>
+                      {studentGasRecord.hadir + studentGasRecord.ijin + studentGasRecord.sakit > 0 
+                        ? `${Math.round((studentGasRecord.hadir / (studentGasRecord.hadir + studentGasRecord.ijin + studentGasRecord.sakit)) * 1000) / 10}%` 
+                        : '0%'}
+                    </strong>
+                  </span>
+                </div>
+              ) : (
+                <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-500">
+                  Belum ada rekaman kehadiran di Google Spreadsheet (0 hari).
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Status Selector Buttons (replicates original HADIR, IJIN, SAKIT, LIBUR with neon glow) */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        {/* Status Selector Buttons (HADIR, IJIN, SAKIT, LIBUR) */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
           <button
             type="button"
             onClick={() => setActiveStatus('hadir')}
-            className={`py-3 px-2 rounded-2xl font-bold text-xs sm:text-sm tracking-wide transition-all ${
+            className={`py-3 px-2 rounded-xl font-bold text-xs sm:text-sm tracking-wide transition-all border cursor-pointer ${
               activeStatus === 'hadir'
-                ? 'text-[#00ff9d] border border-[#00ff9d] bg-[#00ff9d]/10 shadow-[0_0_15px_rgba(0,255,157,0.35)] scale-[1.02]'
-                : 'text-slate-400 bg-white/[0.02] border border-white/10 hover:border-white/20 hover:text-white'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
             }`}
           >
             HADIR
@@ -383,10 +429,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveStatus('ijin')}
-            className={`py-3 px-2 rounded-2xl font-bold text-xs sm:text-sm tracking-wide transition-all ${
+            className={`py-3 px-2 rounded-xl font-bold text-xs sm:text-sm tracking-wide transition-all border cursor-pointer ${
               activeStatus === 'ijin'
-                ? 'text-[#ffcc00] border border-[#ffcc00] bg-[#ffcc00]/10 shadow-[0_0_15px_rgba(255,204,0,0.35)] scale-[1.02]'
-                : 'text-slate-400 bg-white/[0.02] border border-white/10 hover:border-white/20 hover:text-white'
+                ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
             }`}
           >
             IJIN
@@ -395,10 +441,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveStatus('sakit')}
-            className={`py-3 px-2 rounded-2xl font-bold text-xs sm:text-sm tracking-wide transition-all ${
+            className={`py-3 px-2 rounded-xl font-bold text-xs sm:text-sm tracking-wide transition-all border cursor-pointer ${
               activeStatus === 'sakit'
-                ? 'text-[#ff0055] border border-[#ff0055] bg-[#ff0055]/10 shadow-[0_0_15px_rgba(255,0,85,0.35)] scale-[1.02]'
-                : 'text-slate-400 bg-white/[0.02] border border-white/10 hover:border-white/20 hover:text-white'
+                ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/20'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200'
             }`}
           >
             SAKIT
@@ -407,66 +453,68 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveStatus('libur')}
-            className={`py-3 px-2 rounded-2xl font-bold text-xs sm:text-sm tracking-wide transition-all ${
+            className={`py-3 px-2 rounded-xl font-bold text-xs sm:text-sm tracking-wide transition-all border cursor-pointer ${
               activeStatus === 'libur'
-                ? 'text-[#a855f7] border border-[#a855f7] bg-[#a855f7]/10 shadow-[0_0_15px_rgba(168,85,247,0.35)] scale-[1.02]'
-                : 'text-slate-400 bg-white/[0.02] border border-white/10 hover:border-white/20 hover:text-white'
+                ? 'bg-violet-600 text-white border-violet-600 shadow-md shadow-violet-600/20'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200'
             }`}
           >
             LIBUR
           </button>
         </div>
 
-        {/* Productivity Quick Tools (Admin Only) */}
-        {userRole === 'admin' && (
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4 p-2.5 rounded-2xl bg-black/30 border border-white/5 text-xs">
-            <span className="text-slate-400 font-medium flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-blue-400" /> Aksi Cepat Admin:
+        {/* Quick Tools & Helper Buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-slate-500 font-semibold flex items-center gap-1">
+              <Sparkles className="h-3.5 w-3.5 text-blue-600" /> Bantuan:
             </span>
-            <div className="flex items-center gap-1.5">
+            {studentGasRecord && studentGasRecord.hadir > 0 && (
               <button
                 type="button"
-                onClick={handleAutoFillWeekdays}
-                className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-[#00ff9d] border border-emerald-500/30 font-semibold transition-colors"
-                title="Isi Senin-Sabtu Hadir, Minggu Libur"
+                onClick={handleFillFromGasRecord}
+                className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold transition-colors cursor-pointer"
+                title={`Tandai ${studentGasRecord.hadir} hari Hadir sesuai catatan spreadsheet`}
               >
-                Isi Hari Kerja
+                Tandai {studentGasRecord.hadir} Hari Hadir (Sheet)
               </button>
-              <button
-                type="button"
-                onClick={handleMarkSundaysHoliday}
-                className="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-[#a855f7] border border-purple-500/30 font-semibold transition-colors"
-                title="Tandai seluruh hari Minggu Libur"
-              >
-                Minggu Libur
-              </button>
-              <button
-                type="button"
-                onClick={handleClearCalendar}
-                className="p-1 rounded-lg hover:bg-pink-500/20 text-slate-400 hover:text-[#ff0055] transition-colors"
-                title="Bersihkan Semua"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={handleMarkSundaysHoliday}
+              className="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 font-bold transition-colors cursor-pointer"
+              title="Tandai seluruh hari Minggu Libur"
+            >
+              Minggu Libur
+            </button>
           </div>
-        )}
 
-        {/* Calendar Grid (matches 7 columns with Sunday red styling) */}
+          <button
+            type="button"
+            onClick={handleClearCalendar}
+            className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            title="Kosongkan seluruh tanggal di kalender ini"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Kosongkan Kalender</span>
+          </button>
+        </div>
+
+        {/* Calendar Grid (7 columns) */}
         <div className="mb-6">
           {/* Day Labels */}
-          <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-bold uppercase tracking-wider">
-            <div className="text-[#ff4d4d]">Min</div>
-            <div className="text-slate-400">Sen</div>
-            <div className="text-slate-400">Sel</div>
-            <div className="text-slate-400">Rab</div>
-            <div className="text-slate-400">Kam</div>
-            <div className="text-slate-400">Jum</div>
-            <div className="text-slate-400">Sab</div>
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
+            <div className="text-rose-600">Min</div>
+            <div className="text-slate-500">Sen</div>
+            <div className="text-slate-500">Sel</div>
+            <div className="text-slate-500">Rab</div>
+            <div className="text-slate-500">Kam</div>
+            <div className="text-slate-500">Jum</div>
+            <div className="text-slate-500">Sab</div>
           </div>
 
           {/* Calendar Day Squares */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {/* Blank offset tiles */}
             {Array.from({ length: currentMonth.hariMulai }).map((_, idx) => (
               <div key={`blank-${idx}`} className="aspect-square opacity-0 pointer-events-none" />
@@ -478,18 +526,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               const isSunday = (currentMonth.hariMulai + day - 1) % 7 === 0;
               const status = localAttendance[day];
 
-              // Determine classes for styling & glow
-              let statusClasses = 'text-slate-300 hover:bg-white/10 border-white/5 bg-white/[0.02]';
+              // Determine classes for bright minimalist styling
+              let statusClasses = 'text-slate-700 hover:bg-slate-100 border-slate-200 bg-slate-50';
               if (status === 'hadir') {
-                statusClasses = 'bg-[#00ff9d] text-black font-extrabold shadow-[0_0_12px_rgba(0,255,157,0.5)] border-transparent scale-[1.03]';
+                statusClasses = 'bg-emerald-500 text-white font-extrabold shadow-sm border-emerald-600 scale-[1.02]';
               } else if (status === 'ijin') {
-                statusClasses = 'bg-[#ffcc00] text-black font-extrabold shadow-[0_0_12px_rgba(255,204,0,0.5)] border-transparent scale-[1.03]';
+                statusClasses = 'bg-amber-400 text-amber-950 font-extrabold shadow-sm border-amber-500 scale-[1.02]';
               } else if (status === 'sakit') {
-                statusClasses = 'bg-[#ff0055] text-white font-extrabold shadow-[0_0_12px_rgba(255,0,85,0.5)] border-transparent scale-[1.03]';
+                statusClasses = 'bg-rose-500 text-white font-extrabold shadow-sm border-rose-600 scale-[1.02]';
               } else if (status === 'libur') {
-                statusClasses = 'bg-[#a855f7] text-white font-extrabold shadow-[0_0_12px_rgba(168,85,247,0.5)] border-transparent scale-[1.03]';
+                statusClasses = 'bg-violet-500 text-white font-extrabold shadow-sm border-violet-600 scale-[1.02]';
               } else if (isSunday) {
-                statusClasses = 'text-[#ff4d4d] border-red-500/20 bg-red-500/[0.04] font-semibold';
+                statusClasses = 'text-rose-600 border-rose-200 bg-rose-50/70 font-bold';
               }
 
               return (
@@ -497,7 +545,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   key={day}
                   type="button"
                   onClick={() => handleDayClick(day)}
-                  className={`aspect-square rounded-xl border flex items-center justify-center text-xs sm:text-sm transition-all duration-200 select-none cursor-pointer ${statusClasses}`}
+                  className={`aspect-square rounded-xl border flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-150 select-none cursor-pointer ${statusClasses}`}
                   title={`Tanggal ${day} ${currentMonth.nama} - Status: ${status || (isSunday ? 'Minggu' : 'Kosong')}`}
                 >
                   {day}
@@ -508,48 +556,50 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
 
         {/* Month Summary Bar */}
-        <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 mb-6 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
-            <span className="text-[#00ff9d] font-bold">H: {liveSummary.hadir}</span>
-            <span className="text-[#ffcc00] font-bold">I: {liveSummary.ijin}</span>
-            <span className="text-[#ff0055] font-bold">S: {liveSummary.sakit}</span>
-            <span className="text-[#a855f7] font-bold">L: {liveSummary.libur}</span>
+        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 mb-6 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+              Hadir: {liveSummary.hadir}
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-bold border border-amber-200">
+              Ijin: {liveSummary.ijin}
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 font-bold border border-rose-200">
+              Sakit: {liveSummary.sakit}
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 font-bold border border-violet-200">
+              Libur: {liveSummary.libur}
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-slate-400">Tingkat Kehadiran:</span>
-            <span className={`font-extrabold text-sm ${liveSummary.isWarning ? 'text-[#ff0055]' : 'text-[#00ff9d]'}`}>
+            <span className="text-slate-500">Tingkat Kehadiran:</span>
+            <span className={`font-extrabold text-sm ${liveSummary.isWarning ? 'text-rose-600' : 'text-emerald-600'}`}>
               {liveSummary.persentase}%
             </span>
           </div>
         </div>
 
-        {/* Submit Button (replicates gradient button from original code) */}
+        {/* Submit Button */}
         <button
           type="button"
-          onClick={handleSubmitData}
-          disabled={isSubmitting}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-base tracking-wider uppercase transition-all duration-300 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2.5"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !selectedStudentId}
+          className="w-full py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm tracking-wide transition-all shadow-md shadow-blue-500/20 disabled:shadow-none flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>MENGIRIM DATA...</span>
+              <span>Mengirim Data ke Spreadsheet...</span>
             </>
           ) : (
             <>
               <Send className="h-5 w-5" />
-              <span>KIRIM DATA ABSENSI</span>
+              <span>Kirim Data Absensi ke Google Apps Script</span>
             </>
           )}
         </button>
 
-        {/* Sync hint */}
-        <p className="text-[11px] text-slate-500 text-center mt-3 flex items-center justify-center gap-1">
-          <Info className="h-3 w-3" /> Data otomatis tersinkronisasi ke Google Apps Script & penyimpanan lokal
-        </p>
-
       </div>
-
     </div>
   );
 };

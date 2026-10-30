@@ -6,8 +6,7 @@ import {
   Eye, 
   EyeOff, 
   KeyRound, 
-  AlertCircle,
-  HelpCircle
+  AlertCircle
 } from 'lucide-react';
 import { verifyAdminPin } from '../utils/auth';
 
@@ -42,12 +41,12 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       setPinInput('');
       onLoginSuccess();
     } else {
-      setErrorMessage('PIN salah. Silakan coba lagi (PIN bawaan: 1234).');
+      setErrorMessage('PIN salah. Silakan coba lagi.');
     }
   };
 
   const handleQuickKey = (digit: string) => {
-    if (pinInput.length < 8) {
+    if (pinInput.length < 12) {
       setPinInput(prev => prev + digit);
       setErrorMessage('');
     }
@@ -59,21 +58,21 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-md bg-[#0e1424] border border-blue-500/30 rounded-3xl shadow-2xl shadow-blue-500/10 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-blue-950/40 to-indigo-950/40">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50/80 to-indigo-50/80">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/40 glow-primary">
+            <div className="p-2.5 rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
               <ShieldCheck className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-white">Login Menu Administrator</h3>
-              <p className="text-xs text-slate-400">Akses khusus Guru &amp; Wali Kelas</p>
+              <h3 className="text-base font-extrabold text-slate-900">Login Administrator</h3>
+              <p className="text-xs text-slate-500 font-medium">Akses khusus Guru &amp; Wali Kelas</p>
             </div>
           </div>
 
@@ -84,7 +83,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               onClose();
             }}
             aria-label="Tutup Dialog"
-            className="p-2 rounded-xl text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-100 border border-slate-200/60 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -92,21 +91,21 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Halaman ini khusus untuk pengelola presensi. Masukkan PIN keamanan untuk membuka akses rekapitulasi lengkap, ekspor laporan, dan konfigurasi webhook.
+          <p className="text-xs text-slate-600 leading-relaxed font-medium">
+            Masukkan PIN pengelola presensi untuk membuka akses manajemen siswa lengkap, rekapitulasi kelas, serta integrasi webhook Google Apps Script.
           </p>
 
           {/* PIN Input field */}
           <div className="space-y-2">
-            <label htmlFor="adminPinInput" className="text-xs font-bold text-slate-300 flex items-center justify-between">
+            <label htmlFor="adminPinInput" className="text-xs font-bold text-slate-700 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-blue-400" />
+                <Lock className="h-3.5 w-3.5 text-blue-600" />
                 PIN Keamanan
               </span>
               <button
                 type="button"
                 onClick={() => setShowPin(!showPin)}
-                className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1"
+                className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 cursor-pointer"
               >
                 {showPin ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 <span>{showPin ? 'Sembunyikan' : 'Tampilkan'}</span>
@@ -122,17 +121,17 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                   setPinInput(e.target.value);
                   setErrorMessage('');
                 }}
-                maxLength={8}
+                maxLength={12}
                 placeholder="Masukkan PIN Admin..."
-                className="w-full px-4 py-3.5 rounded-2xl glass-input text-center text-lg tracking-widest font-mono font-bold"
+                className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 text-center text-lg tracking-widest font-mono font-bold focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
                 autoFocus
                 autoComplete="off"
               />
             </div>
 
             {errorMessage && (
-              <div className="flex items-center gap-2 text-xs text-[#ff0055] bg-pink-500/10 border border-pink-500/30 p-2.5 rounded-xl animate-shake">
-                <AlertCircle className="h-4 w-4 shrink-0" />
+              <div className="flex items-center gap-2 text-xs text-rose-700 bg-rose-50 border border-rose-200 p-2.5 rounded-xl font-medium">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
                 <span>{errorMessage}</span>
               </div>
             )}
@@ -145,7 +144,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 key={num}
                 type="button"
                 onClick={() => handleQuickKey(num)}
-                className="py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-blue-600/30 border border-white/5 font-mono text-base font-bold text-slate-200 transition-all select-none"
+                className="py-3 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-blue-50 border border-slate-200 font-mono text-base font-bold text-slate-800 transition-all select-none shadow-sm cursor-pointer"
               >
                 {num}
               </button>
@@ -156,30 +155,24 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 setPinInput('');
                 setErrorMessage('');
               }}
-              className="py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 text-xs font-semibold text-slate-400 transition-all select-none"
+              className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-600 transition-all select-none cursor-pointer"
             >
               C
             </button>
             <button
               type="button"
               onClick={() => handleQuickKey('0')}
-              className="py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-blue-600/30 border border-white/5 font-mono text-base font-bold text-slate-200 transition-all select-none"
+              className="py-3 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-blue-50 border border-slate-200 font-mono text-base font-bold text-slate-800 transition-all select-none shadow-sm cursor-pointer"
             >
               0
             </button>
             <button
               type="button"
               onClick={handleDeleteKey}
-              className="py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 text-xs font-semibold text-slate-400 transition-all select-none"
+              className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-600 transition-all select-none cursor-pointer"
             >
               ⌫
             </button>
-          </div>
-
-          {/* Hint badge */}
-          <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 flex items-center gap-2">
-            <HelpCircle className="h-4 w-4 text-blue-400 shrink-0" />
-            <span>PIN bawaan pengelola sekolah: <strong>1234</strong></span>
           </div>
 
           {/* Action buttons */}
@@ -191,14 +184,14 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 setErrorMessage('');
                 onClose();
               }}
-              className="w-1/3 py-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 font-bold text-xs transition-colors"
+              className="w-1/3 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
             >
               Batal
             </button>
 
             <button
               type="submit"
-              className="w-2/3 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-1.5"
+              className="w-2/3 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <KeyRound className="h-4 w-4" />
               <span>Buka Menu Admin</span>
